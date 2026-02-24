@@ -23,7 +23,8 @@ function relax_and_fix(model, time_blocks, binary_blocks)
 
     all_binaries = [v for v in all_vars if is_binary(v)]
 
-    binaries_current=binary_var_block_ls(m, time_blocks) 
+    #binaries_current=binary_var_block_ls(m, time_blocks) # LSP version
+    binaries_current=binary_var_block_tm(m, time_blocks) # TM version
     
     for (i, block) in enumerate(time_blocks)
         
