@@ -9,8 +9,9 @@ function relax_and_fix(model, time_blocks, binary_blocks)
     m = copy(model)
     set_optimizer(m, Gurobi.Optimizer)
     set_attribute(m, "OutputFlag", 0)
-    set_attribute(m, "TimeLimit", 150.0)
-    #set_attribute(m, "TimeLimit", 180.0)
+    #set_attribute(m, "TimeLimit", 150.0)
+    #set_attribute(m, "TimeLimit", 1500.0) # 25 minutes per block
+    set_attribute(m, "TimeLimit", 300.0) # 5 minutes per block
     
 
 
@@ -53,11 +54,45 @@ function relax_and_fix(model, time_blocks, binary_blocks)
             end
         end
     
-
-
         # Solve the subproblem
         optimize!(m)
 
+        #----------- CHECK -----------------------
+        # 3. DEBUGGING: Print state if Infeasible or if you want to track Block 4/5
+
+        status = termination_status(m)
+        if status != MOI.OPTIMAL && status != MOI.TIME_LIMIT
+            println("!!! INFEASIBILITY DETECTED at Block $i !!!")
+            println("Fixed variables so far:")
+            for f_var in fixed_vars
+                val = value(f_var)
+                if val > 0.5
+                    println("  Fixed: $(f_var) = $val")
+                end
+            end
+            return nothing
+        end
+
+        if !has_values(m)
+            println("No values found for Block $i")
+            return nothing
+        end
+
+        # 4. Print current progress for x, y, z (where value > 0.5)
+        println("Decisions made in Block $i:")
+        for v in binaries_current[i]
+            val = value(v)
+            if val > 0.5
+                # Simple logic to print clean names
+                println("  Selected: $(v) = $(round(val, digits=2))")
+            end
+        end
+
+
+        #-----------------------------------
+
+
+        #=
         status = termination_status(m)
         if status != MOI.OPTIMAL && status != MOI.TIME_LIMIT
             println("Infeasible al blocco $i. Termino l'euristico.")
@@ -66,7 +101,8 @@ function relax_and_fix(model, time_blocks, binary_blocks)
             println("Nessuna soluzione trovata nel blocco $i entro il tempo limite.")
             return nothing
         end
-        
+        =#
+    
         # save the values before fixing
         vals = Dict{VariableRef, Float64}()
 

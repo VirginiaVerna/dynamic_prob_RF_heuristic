@@ -3,8 +3,8 @@
 
 using JuMP, Gurobi
 
-include(joinpath(@__DIR__, "trainmaintenance_toy1.jl"))
-#include(joinpath(@__DIR__, "trainmaintenance_medium1.jl"))
+#include(joinpath(@__DIR__, "trainmaintenance_toy1.jl"))
+include(joinpath(@__DIR__, "trainmaintenance_medium1.jl"))
 
 
 include(joinpath(@__DIR__, "partition_period.jl"))
@@ -14,8 +14,9 @@ include(joinpath(@__DIR__, "relax_and_fix.jl"))
 
 TM=Model(Gurobi.Optimizer)
 set_optimizer_attribute(TM, "OutputFlag", 1)
-set_optimizer_attribute(TM, "TimeLimit", 300)
-#set_optimizer_attribute(TM, "TimeLimit", 1800)
+#set_optimizer_attribute(TM, "TimeLimit", 300)
+set_optimizer_attribute(TM, "TimeLimit", 2700) 
+#set_optimizer_attribute(TM, "TimeLimit", 21600) # 6 hours
 
 
 
@@ -56,7 +57,7 @@ for k in K, j in periods if j > 0 # j=0 already in the first constraint
         sum(x[k, a] for a in A_t[k] if a[1] == j)
     )
 end
-
+end
 
 
 
@@ -93,7 +94,7 @@ best_bound=round(objective_bound(TM), digits=2)
 
 
 
-if termination_status(TM) == MOI.OPTIMAL
+if termination_status(TM) == MOI.OPTIMAL || termination_status(TM) == MOI.TIME_LIMIT
     println("\n--- OPTIMAL SOLUTION DETAILS ---")
     
     for k in K
@@ -138,8 +139,9 @@ end
 
 # ----- RELAX AND FIX -----
 
-blocks=partition_period(periods, 3) # toy instance
-#blocks=partition_period(periods, 7) # medium instance
+#blocks=partition_period(periods, 3) # toy instance
+blocks=partition_period(periods, 5) # medium instance
+println("\nTime blocks: ", blocks)
 
 binary_blocks=binary_var_block_tm(TM, blocks)
 #println("\nBinary variables per block:")
